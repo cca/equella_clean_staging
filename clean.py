@@ -4,6 +4,12 @@ import os
 import psycopg2
 import shutil
 
+# load configuration info
+with open('config.json') as file:
+    config = json.load(file)
+    if config['debug'] is True:
+        print('Debugging mode. No files nor database tuples will be affected.')
+
 
 def connect():
     """ Connect to PostgreSQL database """
@@ -93,12 +99,6 @@ def files_are_old(uuid):
 
 def main():
     """ main program logic """
-    # load configuration info
-    with open('config.json') as file:
-        config = json.load(file)
-        if config['debug'] is True:
-            print('Debugging mode. No files nor database tuples will be affected.')
-
     connection = connect()
     cursor = connection.cursor()
     cursor.execute('SELECT * FROM staging;')
