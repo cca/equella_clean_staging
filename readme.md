@@ -19,6 +19,7 @@ Made for Python 2.7 as that's what we have on our Ubuntu servers. Also I'm using
 
 ```sh
 > virtualenv .
+> source bin/activate
 > pip install -r requirements.txt
 > vim config.json
 ```
