@@ -41,3 +41,7 @@ Made for Python 2.7 as that's what we have on our Ubuntu servers. Also I'm using
 Script won't delete files with debug mode on. Outputs a lot of text about each entry in the "staging" database table. There are no command line flags, just run `python clean.py`.
 
 Won't work on Windows because a "/" path separator is hard-coded but it would be easy to change that. Also not made to work with multiple openEQUELLA filestores.
+
+# LICENSE
+
+[ECL Version 2.0](https://opensource.org/licenses/ECL-2.0)
