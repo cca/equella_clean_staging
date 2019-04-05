@@ -62,6 +62,12 @@ def database_is_safe(stage, connection):
         cursor.close()
         return False
 
+    cursor.execute('SELECT * FROM item_lock WHERE user_session = %s;', (user_session,))
+    if cursor.fetchone() is not None:
+        print('{} user session has a locked item in the database.').format(stage[0])
+        cursor.close()
+        return False
+
     # fallthrough - the stage's user session doesn't appear active
     print('{} is not associated with an active user session.').format(stage[0])
     cursor.close()
