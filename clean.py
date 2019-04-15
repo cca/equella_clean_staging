@@ -1,14 +1,25 @@
 import datetime
 import json
 import os
-import psycopg2
 import shutil
 
+import psycopg2
+from sortedcontainers import SortedList
+
 # load configuration info
-with open('config.json') as file:
+with open('config.json', 'r') as file:
     config = json.load(file)
     if config['debug'] is True:
         print('Debugging mode. No files nor database tuples will be affected.')
+
+# if we have a list of duplicate files, load it into a sorted list
+if config.get('duplicates_file'):
+    dupes = []
+    with open(config['duplicates_file'], 'r') as file:
+        for line in file:
+            dupes.append(line)
+
+    sorted_dupes = SortedList(dupes)
 
 
 def connect():
@@ -36,12 +47,12 @@ def hash128(str):
 
 def get_path(uuid):
     """
-    given staging area UUID, return it's path on the mounted filestore
+    given staging area UUID, return its path on the mounted filestore
     path is like /mnt/equelladata01/107/a61aa663-9829-4b9b-bb2c-512d48f46eaf
     NOTE: we actually have 2 filestores so we're just ignoring the secondary one
     for now, which only Industrial Design uses
     """
-    return '/'.join([config['filestore'], str(hash128(uuid)), uuid])
+    return os.path.join([config['filestore'], str(hash128(uuid)), uuid])
 
 
 def database_is_safe(stage, connection):
@@ -81,7 +92,7 @@ def files_are_old(uuid):
     try:
         dir_listing = os.listdir(staging_path)
         if len(dir_listing) > 0:
-            stat = os.stat(staging_path + '/' + dir_listing[0])
+            stat = os.stat(os.path.join(staging_path, dir_listing[0]))
             now = datetime.datetime.now()
             # stat.st_mtime (last modified), stat.st_atime (last accessed),
             # & stat.st_ctime (last metadata change) are all options
@@ -103,6 +114,48 @@ def files_are_old(uuid):
     return True
 
 
+def files_are_dupes(uuid):
+    """ check that all files are in our list of duplicates """
+    staging_path = get_path(uuid)
+
+    try:
+        # for each step on the walk, root is the dir we're in, dirs is a tuple
+        # of all sub-directories, and files is a tuple of file names in the dir
+        for root, dirs, files in os.walk(staging_path):
+            for file in files:
+                filepath = os.path.join(root, file)
+                if filepath not in sorted_dupes:
+                    print('{} is not in the duplicates list'.format(filepath))
+                    return False
+
+        else:
+            return True
+
+    except:
+        return True
+
+    # fallthrough - all files are in the list of duplicates
+    print('{} files are duplicated somewhere in storage.'.format(uuid))
+    return True
+
+
+def files_ok(uuid):
+    """ combine the two file system checks (age, duplicity) into one """
+    # since these checks are slow, nest them so we don't need to run the second
+    # if the first one fails
+    if files_are_old(uuid):
+        # only run second test if we have a dupes list
+        if config.get('duplicates_file'):
+            if files_are_dupes(uuid):
+                return True
+            else:
+                return False
+        else:
+            return True
+    else:
+        return False
+
+
 def main():
     """ main program logic """
     connection = connect()
@@ -114,7 +167,7 @@ def main():
     while stage is not None:
         uuid = stage[0]
         print('Testing Staging area {} now.').format(uuid)
-        if database_is_safe(stage, connection) and files_are_old(uuid):
+        if database_is_safe(stage, connection) and files_ok(uuid):
             print('Staging {} looks safe to delete.').format(uuid)
             if config['debug'] is False:
                 # delete files!! ignore errors bc sometimes path will be empty
