@@ -52,7 +52,7 @@ def get_path(uuid):
     NOTE: we actually have 2 filestores so we're just ignoring the secondary one
     for now, which only Industrial Design uses
     """
-    return os.path.join([config['filestore'], str(hash128(uuid)), uuid])
+    return os.path.join(config['filestore'], str(hash128(uuid)), uuid)
 
 
 def database_is_safe(stage, connection):
