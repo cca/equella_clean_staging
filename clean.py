@@ -166,7 +166,7 @@ def main():
 
     while stage is not None:
         uuid = stage[0]
-        print('Testing Staging area {} now.').format(uuid)
+        print('{} - testing Staging area {}').format(datetime.datetime.now(), uuid)
         if database_is_safe(stage, connection) and files_ok(uuid):
             print('Staging {} looks safe to delete.').format(uuid)
             if config['debug'] is False:
