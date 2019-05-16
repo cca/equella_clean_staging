@@ -55,11 +55,11 @@ def get_path(uuid):
     return os.path.join(config['filestore'], str(hash128(uuid)), uuid)
 
 
-def database_is_safe(stage, connection):
+def database_is_safe(stage, db):
     """ check that staging.user_session value doesn't appear in other db tables """
     user_session = stage[1]
     # get a new db cursor
-    cursor = connection.cursor()
+    cursor = db.cursor()
 
     cursor.execute('SELECT * FROM cached_value WHERE key = %s;', (user_session,))
     if cursor.fetchone() is not None:
@@ -158,16 +158,15 @@ def files_ok(uuid):
 
 def main():
     """ main program logic """
-    connection = connect()
-    cursor = connection.cursor()
+    db = connect()
+    cursor = db.cursor()
     cursor.execute('SELECT * FROM staging;')
-    stage = cursor.fetchone()
     print('{} entries in staging database table to test.'.format(cursor.rowcount))
 
-    while stage is not None:
+    for stage in cursor:
         uuid = stage[0]
         print('{} - testing Staging area {}').format(datetime.datetime.now(), uuid)
-        if database_is_safe(stage, connection) and files_ok(uuid):
+        if database_is_safe(stage, db) and files_ok(uuid):
             print('Staging {} looks safe to delete.').format(uuid)
             if config['debug'] is False:
                 # delete files!! ignore errors bc sometimes path will be empty
@@ -175,16 +174,14 @@ def main():
                 shutil.rmtree(get_path(uuid), ignore_errors=True)
                 # delete database row!!
                 print('Database: DELETE FROM staging WHERE stagingid = {};').format(uuid)
-                cursor2 = connection.cursor()
-                cursor.execute('DELETE FROM staging WHERE stagingid = %s;', (uuid,))
-                connection.commit()
-                cursor2.close()
+                # use named cursor, deleted with each commit()
+                cursor2 = db.cursor('deletion')
+                cursor2.execute('DELETE FROM staging WHERE stagingid = %s;', (uuid,))
+                db.commit()
 
-        stage = cursor.fetchone()
-
-    # close db cursor and then connection
+    # close db cursor and then db connection
     cursor.close()
-    connection.close()
+    db.close()
 
 
 if __name__ == '__main__':
