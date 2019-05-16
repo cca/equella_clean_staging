@@ -174,12 +174,11 @@ def main():
                 shutil.rmtree(get_path(uuid), ignore_errors=True)
                 # delete database row!!
                 print('Database: DELETE FROM staging WHERE stagingid = {};').format(uuid)
-                # use named cursor, deleted with each commit()
-                cursor2 = db.cursor('deletion')
+                cursor2 = db.cursor()
                 cursor2.execute('DELETE FROM staging WHERE stagingid = %s;', (uuid,))
-                db.commit()
 
     # close db cursor and then db connection
+    db.commit()
     cursor.close()
     db.close()
 
