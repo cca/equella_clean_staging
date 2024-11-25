@@ -59,7 +59,7 @@ def database_is_safe(stage, db):
 
     cursor.execute("SELECT * FROM cached_value WHERE key = %s;", (user_session,))
     if cursor.fetchone() is not None:
-        print(f"{stage[0]} user session has a cache value in the database.")
+        print("{} user session has a cache value in the database.".format(stage[0]))
         cursor.close()
         return False
 
@@ -67,18 +67,18 @@ def database_is_safe(stage, db):
         "SELECT * FROM entity_lock WHERE user_session = %s;", (user_session,)
     )
     if cursor.fetchone() is not None:
-        print(f"{stage[0]} user session has a locked entity in the database.")
+        print("{} user session has a locked entity in the database.".format(stage[0]))
         cursor.close()
         return False
 
     cursor.execute("SELECT * FROM item_lock WHERE user_session = %s;", (user_session,))
     if cursor.fetchone() is not None:
-        print(f"{stage[0]} user session has a locked item in the database.")
+        print("{} user session has a locked item in the database.".format(stage[0]))
         cursor.close()
         return False
 
     # fallthrough - the stage's user session doesn't appear active
-    print(f"{stage[0]} is not associated with an active user session.")
+    print("{} is not associated with an active user session.".format(stage[0]))
     cursor.close()
     return True
 
@@ -104,7 +104,7 @@ def files_are_old(uuid):
             return True
 
     except OSError as err:
-        print("Error accessing {0} files: {1}".format(uuid, err))
+        print("Error accessing {} files: {}".format(uuid, err))
         return True
 
     # fallthrough - there's a directory with files & they're old
@@ -123,14 +123,14 @@ def files_are_dupes(uuid):
             for file in files:
                 filepath = os.path.join(root, file)
                 if filepath not in sorted_dupes:
-                    print(f"{filepath} is not in the duplicates list")
+                    print("{} is not in the duplicates list".format(filepath))
                     return False
 
-        print(f"{uuid} files are duplicated somewhere in storage.")
+        print("{} files are duplicated somewhere in storage.".format(uuid))
         return True
 
     else:
-        print(f"{staging_path} does not exist.")
+        print("{} does not exist.".format(staging_path))
         return True
 
 
@@ -150,21 +150,23 @@ def main():
     db = connect()
     cursor = db.cursor()
     cursor.execute("SELECT * FROM staging;")
-    print(f"{cursor.rowcount} entries in staging database table to test.")
+    print("{} entries in staging database table to test.".format(cursor.rowcount))
 
     for stage in cursor:
         uuid = stage[0]
-        print(f"{datetime.datetime.now()} - testing Staging area {uuid}")
+        print("{} - testing Staging area {}".format(datetime.datetime.now(), uuid))
         if database_is_safe(stage, db) and files_ok(uuid):
-            print(f"Staging {uuid} looks safe to delete.")
+            print("Staging {} looks safe to delete.".format(uuid))
             if config.debug is False:
                 # delete files!! ignore errors bc sometimes path will be empty
-                print(f"Deleting {get_path(uuid)}")
+                print("Deleting {}".format(get_path(uuid)))
                 shutil.rmtree(get_path(uuid), ignore_errors=True)
                 # delete database row!!
-                print(f"Database: DELETE FROM staging WHERE stagingid = {uuid};")
+                print(
+                    "Database: DELETE FROM staging WHERE stagingid = {};".format(uuid)
+                )
                 cursor2 = db.cursor()
-                cursor2.execute(f"DELETE FROM staging WHERE stagingid = {uuid};")
+                cursor2.execute("DELETE FROM staging WHERE stagingid = %s;", (uuid,))
 
     # close db cursor and then db connection
     db.commit()

@@ -53,12 +53,12 @@ def check_db(dirs, db):
     """
     cursor = db.cursor()
     for stage in dirs:
-        cursor.execute(f"SELECT * FROM staging WHERE stagingid = {stage};")
+        cursor.execute("SELECT * FROM staging WHERE stagingid = {};", (stage,))
         result = cursor.fetchone()
         if result is None:
-            print(f"ATTN: folder {stage} is not in staging database table.")
+            print("ATTN: folder {} is not in staging database table.".format(stage))
         else:
-            print(f"{stage} is present in the database.")
+            print("{} is present in the database.".format(stage))
 
     cursor.close()
 
@@ -66,7 +66,7 @@ def check_db(dirs, db):
 def main():
     """check that all staging directories are present in openEQUELLA database"""
     stages = make_stage_list(config.filestore)
-    print(f"Testing {len(stages)} directories...")
+    print("Testing {} directories...".format(len(stages)))
     db = connect()
     check_db(stages, db)
     db.close()
