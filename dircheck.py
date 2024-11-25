@@ -6,6 +6,11 @@ import psycopg2
 import config
 
 
+UUID_REGEX = re.compile(
+    r"[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}"
+)
+
+
 def connect():
     """Connect to PostgreSQL database"""
     print("Connecting to the PostgreSQL database...")
@@ -20,10 +25,7 @@ def connect():
 
 def is_uuid(string):
     """retun True if string is a UUID"""
-    if re.match(
-        r"[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}",
-        string,
-    ):
+    if UUID_REGEX.match(string):
         return True
     return False
 

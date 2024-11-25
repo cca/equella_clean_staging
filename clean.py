@@ -132,6 +132,7 @@ def files_are_dupes(uuid):
     except:
         return True
 
+    # ! code path unreachable?
     # fallthrough - all files are in the list of duplicates
     print("{} files are duplicated somewhere in storage.".format(uuid))
     return True
@@ -144,14 +145,9 @@ def files_ok(uuid):
     if files_are_old(uuid):
         # only run second test if we have a dupes list
         if config.duplicates_file:
-            if files_are_dupes(uuid):
-                return True
-            else:
-                return False
-        else:
-            return True
-    else:
-        return False
+            return files_are_dupes(uuid)
+        return True
+    return False
 
 
 def main():
