@@ -4,7 +4,7 @@ import shutil
 
 import psycopg2
 
-from .clean import files_are_old, get_path
+from clean import files_are_old, get_path
 import config
 
 
@@ -55,7 +55,7 @@ def check_db(dirs, db):
     """
     cursor = db.cursor()
     for stage in dirs:
-        cursor.execute("SELECT * FROM staging WHERE stagingid = {};", (stage,))
+        cursor.execute("SELECT * FROM staging WHERE stagingid = %s;", (stage,))
         result = cursor.fetchone()
         if result is None:
             print("ATTN: folder {} is not in staging database table.".format(stage))

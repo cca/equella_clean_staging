@@ -163,7 +163,7 @@ def main():
                 shutil.rmtree(get_path(uuid), ignore_errors=True)
                 # delete database row!!
                 print(
-                    "Database: DELETE FROM staging WHERE stagingid = {};".format(uuid)
+                    "Database: DELETE FROM staging WHERE stagingid = %s;".format(uuid)
                 )
                 cursor2 = db.cursor()
                 cursor2.execute("DELETE FROM staging WHERE stagingid = %s;", (uuid,))
