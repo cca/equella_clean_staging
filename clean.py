@@ -59,7 +59,7 @@ def database_is_safe(stage, db):
 
     cursor.execute("SELECT * FROM cached_value WHERE key = %s;", (user_session,))
     if cursor.fetchone() is not None:
-        print("{} user session has a cache value in the database.").format(stage[0])
+        print(f"{stage[0]} user session has a cache value in the database.")
         cursor.close()
         return False
 
@@ -67,18 +67,18 @@ def database_is_safe(stage, db):
         "SELECT * FROM entity_lock WHERE user_session = %s;", (user_session,)
     )
     if cursor.fetchone() is not None:
-        print("{} user session has a locked entity in the database.").format(stage[0])
+        print(f"{stage[0]} user session has a locked entity in the database.")
         cursor.close()
         return False
 
     cursor.execute("SELECT * FROM item_lock WHERE user_session = %s;", (user_session,))
     if cursor.fetchone() is not None:
-        print("{} user session has a locked item in the database.").format(stage[0])
+        print(f"{stage[0]} user session has a locked item in the database.")
         cursor.close()
         return False
 
     # fallthrough - the stage's user session doesn't appear active
-    print("{} is not associated with an active user session.").format(stage[0])
+    print(f"{stage[0]} is not associated with an active user session.")
     cursor.close()
     return True
 
@@ -143,7 +143,7 @@ def files_ok(uuid):
     # if the first one fails
     if files_are_old(uuid):
         # only run second test if we have a dupes list
-        if config.get("duplicates_file"):
+        if config.duplicates_file:
             if files_are_dupes(uuid):
                 return True
             else:
@@ -159,23 +159,21 @@ def main():
     db = connect()
     cursor = db.cursor()
     cursor.execute("SELECT * FROM staging;")
-    print("{} entries in staging database table to test.".format(cursor.rowcount))
+    print(f"{cursor.rowcount} entries in staging database table to test.")
 
     for stage in cursor:
         uuid = stage[0]
-        print("{} - testing Staging area {}").format(datetime.datetime.now(), uuid)
+        print(f"{datetime.datetime.now()} - testing Staging area {uuid}")
         if database_is_safe(stage, db) and files_ok(uuid):
-            print("Staging {} looks safe to delete.").format(uuid)
+            print(f"Staging {uuid} looks safe to delete.")
             if config.debug is False:
                 # delete files!! ignore errors bc sometimes path will be empty
-                print("Deleting {}").format(get_path(uuid))
+                print(f"Deleting {get_path(uuid)}")
                 shutil.rmtree(get_path(uuid), ignore_errors=True)
                 # delete database row!!
-                print("Database: DELETE FROM staging WHERE stagingid = {};").format(
-                    uuid
-                )
+                print(f"Database: DELETE FROM staging WHERE stagingid = {uuid};")
                 cursor2 = db.cursor()
-                cursor2.execute("DELETE FROM staging WHERE stagingid = %s;", (uuid,))
+                cursor2.execute(f"DELETE FROM staging WHERE stagingid = {uuid};")
 
     # close db cursor and then db connection
     db.commit()
