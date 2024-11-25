@@ -16,6 +16,8 @@ There's some 1.3TB of files left in /mnt/equelladata01/Staging many of which are
     + delete the directory and its contents
     + remove the row from the `staging` database table
 
+That's clean.py, which looks at the EQUELLA database then to the files. The dircheck.py script goes in the other direction and looks at UUID-named directories under the Staging path, trying to find references to them in the database. Neither will delete files or database rows if `config.debug` is `True`.
+
 ## Setup
 
 We _should_ be able to set this up and run it using python 3 on our servers, but it was originally written for 2.7. Python on the server is 3.4.3. We can't use f-strings and the psycopg2 version is chosen to work with this older python. We may need to `apt-get install libpq-dev` to get it to work.
