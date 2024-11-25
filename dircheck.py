@@ -1,8 +1,10 @@
 import os
 import re
+import shutil
 
 import psycopg2
 
+from .clean import files_are_old, get_path
 import config
 
 
@@ -57,6 +59,9 @@ def check_db(dirs, db):
         result = cursor.fetchone()
         if result is None:
             print("ATTN: folder {} is not in staging database table.".format(stage))
+            if not config.debug and files_are_old(stage):
+                print("Deleting {}".format(get_path(stage)))
+                shutil.rmtree(get_path(stage))
         else:
             print("{} is present in the database.".format(stage))
 
