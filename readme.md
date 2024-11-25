@@ -43,7 +43,7 @@ debug = True
 
 The "duplicates_file" is an optional list of files known to be duplicated somewhere else in storage. This lets us check that it's 100% safe to remove a file before doing so. It is an optional parameter; if not provided, the script simply skips over this check. I've used [fdupes](https://github.com/adrianlopezroche/fdupes) to generate this text file.
 
-The script will not delete files in `debug` mode. Outputs a lot of text about each entry in the "staging" database table. There are no command line flags, just run `python clean.py`. The script needs to run as root, otherwise it cannot access the mounted filestore.
+The script will not delete files in `debug` mode. Outputs a lot of text about each entry in the "staging" database table. There are no command line flags, just run `python3 clean.py` or `python3 dircheck.py`. The script needs to run as root, otherwise it cannot access the mounted filestore.
 
 ## LICENSE
 
