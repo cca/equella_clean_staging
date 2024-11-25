@@ -6,16 +6,12 @@ import shutil
 import psycopg2
 from sortedcontainers import SortedList
 
-# load configuration info
-with open('config.json', 'r') as file:
-    config = json.load(file)
-    if config['debug'] is True:
-        print('Debugging mode. No files nor database tuples will be affected.')
+import config
 
 # if we have a list of duplicate files, load it into a sorted list
-if config.get('duplicates_file'):
+if config.duplicates_file:
     dupes = []
-    with open(config['duplicates_file'], 'r') as file:
+    with open(config.duplicates_file, "r") as file:
         for line in file:
             dupes.append(line)
 
@@ -23,19 +19,20 @@ if config.get('duplicates_file'):
 
 
 def connect():
-    """ Connect to PostgreSQL database """
-    print('Connecting to the PostgreSQL database...')
+    """Connect to PostgreSQL database"""
+    print("Connecting to the PostgreSQL database...")
     return psycopg2.connect(
-        host=config['host'],
-        user=config['user'],
-        password=config['password'],
-        dbname=config['dbname'],
-        port=config['port'],
+        host=config.host,
+        user=config.user,
+        password=config.password,
+        dbname=config.dbname,
+        port=config.port,
     )
+
 
 # from https://gist.github.com/hanleybrand/5224673
 def hash128(str):
-    """ return 7-bit hash of string """
+    """return 7-bit hash of string"""
     hash = 0
     for char in str:
         hash = (31 * hash + ord(char)) & 0xFFFFFFFF
@@ -52,41 +49,43 @@ def get_path(uuid):
     NOTE: we actually have 2 filestores so we're just ignoring the secondary one
     for now, which only Industrial Design uses
     """
-    return os.path.join(config['filestore'], str(hash128(uuid)), uuid)
+    return os.path.join(config.filestore, str(hash128(uuid)), uuid)
 
 
 def database_is_safe(stage, db):
-    """ check that staging.user_session value doesn't appear in other db tables """
+    """check that staging.user_session value doesn't appear in other db tables"""
     user_session = stage[1]
     # get a new db cursor
     cursor = db.cursor()
 
-    cursor.execute('SELECT * FROM cached_value WHERE key = %s;', (user_session,))
+    cursor.execute("SELECT * FROM cached_value WHERE key = %s;", (user_session,))
     if cursor.fetchone() is not None:
-        print('{} user session has a cache value in the database.').format(stage[0])
+        print("{} user session has a cache value in the database.").format(stage[0])
         cursor.close()
         return False
 
-    cursor.execute('SELECT * FROM entity_lock WHERE user_session = %s;', (user_session,))
+    cursor.execute(
+        "SELECT * FROM entity_lock WHERE user_session = %s;", (user_session,)
+    )
     if cursor.fetchone() is not None:
-        print('{} user session has a locked entity in the database.').format(stage[0])
+        print("{} user session has a locked entity in the database.").format(stage[0])
         cursor.close()
         return False
 
-    cursor.execute('SELECT * FROM item_lock WHERE user_session = %s;', (user_session,))
+    cursor.execute("SELECT * FROM item_lock WHERE user_session = %s;", (user_session,))
     if cursor.fetchone() is not None:
-        print('{} user session has a locked item in the database.').format(stage[0])
+        print("{} user session has a locked item in the database.").format(stage[0])
         cursor.close()
         return False
 
     # fallthrough - the stage's user session doesn't appear active
-    print('{} is not associated with an active user session.').format(stage[0])
+    print("{} is not associated with an active user session.").format(stage[0])
     cursor.close()
     return True
 
 
 def files_are_old(uuid):
-    """ check that the files in Staging are over a year old """
+    """check that the files in Staging are over a year old"""
     staging_path = get_path(uuid)
     # directory might not exist so work around errors
     try:
@@ -98,24 +97,24 @@ def files_are_old(uuid):
             # & stat.st_ctime (last metadata change) are all options
             last_modified = datetime.datetime.fromtimestamp(stat.st_mtime)
             if (now - last_modified) < datetime.timedelta(days=365):
-                print('{} files less than a year old.'.format(uuid))
+                print("{} files less than a year old.".format(uuid))
                 return False
 
         else:
-            print('{} directory is empty.'.format(uuid))
+            print("{} directory is empty.".format(uuid))
             return True
 
     except OSError as err:
-        print('Error accessing {0} files: {1}'.format(uuid, err))
+        print("Error accessing {0} files: {1}".format(uuid, err))
         return True
 
     # fallthrough - there's a directory with files & they're old
-    print('{} files are over a year old.'.format(uuid))
+    print("{} files are over a year old.".format(uuid))
     return True
 
 
 def files_are_dupes(uuid):
-    """ check that all files are in our list of duplicates """
+    """check that all files are in our list of duplicates"""
     staging_path = get_path(uuid)
 
     try:
@@ -125,7 +124,7 @@ def files_are_dupes(uuid):
             for file in files:
                 filepath = os.path.join(root, file)
                 if filepath not in sorted_dupes:
-                    print('{} is not in the duplicates list'.format(filepath))
+                    print("{} is not in the duplicates list".format(filepath))
                     return False
 
         else:
@@ -135,17 +134,17 @@ def files_are_dupes(uuid):
         return True
 
     # fallthrough - all files are in the list of duplicates
-    print('{} files are duplicated somewhere in storage.'.format(uuid))
+    print("{} files are duplicated somewhere in storage.".format(uuid))
     return True
 
 
 def files_ok(uuid):
-    """ combine the two file system checks (age, duplicity) into one """
+    """combine the two file system checks (age, duplicity) into one"""
     # since these checks are slow, nest them so we don't need to run the second
     # if the first one fails
     if files_are_old(uuid):
         # only run second test if we have a dupes list
-        if config.get('duplicates_file'):
+        if config.get("duplicates_file"):
             if files_are_dupes(uuid):
                 return True
             else:
@@ -157,25 +156,27 @@ def files_ok(uuid):
 
 
 def main():
-    """ main program logic """
+    """main program logic"""
     db = connect()
     cursor = db.cursor()
-    cursor.execute('SELECT * FROM staging;')
-    print('{} entries in staging database table to test.'.format(cursor.rowcount))
+    cursor.execute("SELECT * FROM staging;")
+    print("{} entries in staging database table to test.".format(cursor.rowcount))
 
     for stage in cursor:
         uuid = stage[0]
-        print('{} - testing Staging area {}').format(datetime.datetime.now(), uuid)
+        print("{} - testing Staging area {}").format(datetime.datetime.now(), uuid)
         if database_is_safe(stage, db) and files_ok(uuid):
-            print('Staging {} looks safe to delete.').format(uuid)
-            if config['debug'] is False:
+            print("Staging {} looks safe to delete.").format(uuid)
+            if config.debug is False:
                 # delete files!! ignore errors bc sometimes path will be empty
-                print('Deleting {}').format(get_path(uuid))
+                print("Deleting {}").format(get_path(uuid))
                 shutil.rmtree(get_path(uuid), ignore_errors=True)
                 # delete database row!!
-                print('Database: DELETE FROM staging WHERE stagingid = {};').format(uuid)
+                print("Database: DELETE FROM staging WHERE stagingid = {};").format(
+                    uuid
+                )
                 cursor2 = db.cursor()
-                cursor2.execute('DELETE FROM staging WHERE stagingid = %s;', (uuid,))
+                cursor2.execute("DELETE FROM staging WHERE stagingid = %s;", (uuid,))
 
     # close db cursor and then db connection
     db.commit()
@@ -183,5 +184,7 @@ def main():
     db.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
+    if config.debug:
+        print("Debugging mode. No files nor database tuples will be affected.")
     main()

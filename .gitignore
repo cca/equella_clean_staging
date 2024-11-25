@@ -3,5 +3,5 @@ data/
 include/
 lib/
 .Python
-config.json
+config.py
 pip-selfcheck.json
