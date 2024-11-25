@@ -18,11 +18,9 @@ There's some 1.3TB of files left in /mnt/equelladata01/Staging many of which are
 
 ## Setup
 
-Made for Python 2.7 as that's what we have on our Ubuntu servers. Also I'm using psychopg2-binary so we don't need to install postgres build tools (`pg_config` etc.) on the server.
+We _should_ be able to set this up and run it using python 3 on our servers, but it was originally written for 2.7. Python on the server is 3.4.3. We can't use f-strings and the psycopg2 version is chosen to work with this older python. We may need to `apt-get install libpq-dev` to get it to work.
 
 ```sh
-> virtualenv .
-> source bin/activate
 > pip install -r requirements.txt
 > cp example.config.py config.py
 > vim config.py
