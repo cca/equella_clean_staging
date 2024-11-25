@@ -61,7 +61,9 @@ def check_db(dirs, db):
             print("ATTN: folder {} is not in staging database table.".format(stage))
             if not config.debug and files_are_old(stage):
                 print("Deleting {}".format(get_path(stage)))
-                shutil.rmtree(get_path(stage))
+                # while these directories should all exist I still see
+                # "no such file or directory" errors when deleting them
+                shutil.rmtree(get_path(stage), ignore_errors=True)
         else:
             print("{} is present in the database.".format(stage))
 
