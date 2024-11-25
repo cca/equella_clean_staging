@@ -116,26 +116,22 @@ def files_are_dupes(uuid):
     """check that all files are in our list of duplicates"""
     staging_path = get_path(uuid)
 
-    try:
+    if os.path.exists(staging_path):
         # for each step on the walk, root is the dir we're in, dirs is a tuple
         # of all sub-directories, and files is a tuple of file names in the dir
         for root, dirs, files in os.walk(staging_path):
             for file in files:
                 filepath = os.path.join(root, file)
                 if filepath not in sorted_dupes:
-                    print("{} is not in the duplicates list".format(filepath))
+                    print(f"{filepath} is not in the duplicates list")
                     return False
 
-        else:
-            return True
-
-    except:
+        print(f"{uuid} files are duplicated somewhere in storage.")
         return True
 
-    # ! code path unreachable?
-    # fallthrough - all files are in the list of duplicates
-    print("{} files are duplicated somewhere in storage.".format(uuid))
-    return True
+    else:
+        print(f"{staging_path} does not exist.")
+        return True
 
 
 def files_ok(uuid):
@@ -151,7 +147,6 @@ def files_ok(uuid):
 
 
 def main():
-    """main program logic"""
     db = connect()
     cursor = db.cursor()
     cursor.execute("SELECT * FROM staging;")
